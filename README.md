@@ -46,8 +46,11 @@ npx playwright test
 
 ## 📸 Screenshots
 
-*(Add your screenshots here before final submission)*
+### Login Screen
+![Login Screen](./Login-Screen.png)
 
-- `Login Screen`
-- `Main Dashboard`
-- `Character Detail Modal`
+### Main Dashboard
+![Main Dashboard](./Main-Dashboard.png)
+
+### Character Detail Modal
+![Character Detail Modal](./Character-Detail-Modal.png)
