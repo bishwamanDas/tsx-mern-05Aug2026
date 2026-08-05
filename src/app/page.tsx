@@ -1,69 +1,131 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import { useAuthStore } from '@/store/useAuthStore';
+import LoginForm from '@/components/LoginForm';
+import { getCharacters } from '@/services/swapi';
+import { Character, Species } from '@/types/swapi';
+import CharacterCard from '@/components/CharacterCard';
+import CharacterModal from '@/components/CharacterModal';
+import Pagination from '@/components/Pagination';
+import Loader from '@/components/Loader';
+import { Search, AlertTriangle } from 'lucide-react';
 
 export default function Home() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const fetchCharacterData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getCharacters(currentPage, debouncedSearch);
+      setCharacters(data.results);
+      setTotalPages(Math.ceil(data.count / 10));
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load archives. The connection to the Jedi Temple was lost.');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, debouncedSearch]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCharacterData();
+    }
+  }, [isAuthenticated, fetchCharacterData]);
+
+  if (!isAuthenticated) {
+    return <LoginForm />;
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      <div className="max-w-2xl mx-auto mb-8 sm:mb-12 relative group">
+        <div className="relative flex items-center">
+          <Search className="absolute left-3 sm:left-4 text-starwars-yellow" size={18} />
+          <input
+            type="text"
+            placeholder="Search the archive..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-white/5 border border-white/10 rounded-full focus:outline-none focus:border-starwars-yellow focus:ring-1 focus:ring-starwars-yellow text-white transition-all text-base sm:text-lg shadow-lg placeholder-gray-500 group-hover:placeholder-starwars-yellow"
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </div>
+
+      {error ? (
+        <div className="flex flex-col items-center justify-center p-12 text-center bg-red-500/10 border border-red-500/20 rounded-2xl max-w-2xl mx-auto">
+          <AlertTriangle className="text-red-400 mb-4" size={48} />
+          <h3 className="text-xl font-bold text-red-200 mb-2">Communication Disruption</h3>
+          <p className="text-red-400/80 mb-6">{error}</p>
+          <button 
+            onClick={fetchCharacterData}
+            className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 border border-red-500/50 rounded-lg transition-colors"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Retry Connection
+          </button>
         </div>
-      </main>
+      ) : loading ? (
+        <Loader />
+      ) : characters.length === 0 ? (
+        <div className="text-center py-12 sm:py-20 text-gray-500">
+          <p className="text-base sm:text-xl">No records found matching your criteria.</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+            {characters.map((char, index) => (
+              <CharacterCard 
+                key={char.url} 
+                character={char} 
+                index={index} 
+                onClick={(c, s) => {
+                  setSelectedCharacter(c);
+                  setSelectedSpecies(s);
+                }}
+              />
+            ))}
+          </div>
+          
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
+
+      <CharacterModal 
+        character={selectedCharacter}
+        species={selectedSpecies}
+        isOpen={!!selectedCharacter}
+        onClose={() => {
+          setSelectedCharacter(null);
+          setSelectedSpecies(null);
+        }}
+      />
     </div>
   );
 }
