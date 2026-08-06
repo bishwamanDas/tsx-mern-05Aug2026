@@ -1,4 +1,4 @@
-# Star Wars Character App (MERN Stack Assignment)
+# Star Wars Character App
 
 Welcome to the Star Wars Character Explorer! This application is built with **Next.js**, **React**, **TypeScript**, and **Tailwind CSS**, designed with a modern glassmorphism aesthetic tailored to the Star Wars universe.
 
